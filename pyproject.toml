@@ -1,0 +1,26 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "tetsuo"
+version = "0.1.0"
+description = "Traductor y explicador pedagógico en español de sanitizers (ASan, UBSan, MSan)"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "typer>=0.9.0",
+    "rich>=13.0.0",
+    "pydantic>=2.0.0",
+]
+
+[project.scripts]
+tetsuo = "tetsuo.cli:app"
+
+[project.entry-points."ripley.plugins"]
+sanitizer_translator = "tetsuo.plugins.ripley_plugin:TetsuoPlugin"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+pythonpath = ["src"]
