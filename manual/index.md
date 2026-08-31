@@ -354,3 +354,12 @@ Podés encadenar `tetsuo` con otras herramientas del ecosistema en una única l�
 daedalus compile src/*.c -fsanitize=address,undefined -o bin/app && tetsuo run -- ./bin/app
 ````
 
+---
+
+(manual-tetsuo-seccion-plugins)=
+## 9. Extensión, Desarrollo de Plugins y API Python
+
+Para crear tus propias reglas, conectores de evaluación o integrar `tetsuo` programáticamente en pipelines de CI/CD:
+
+- 👉 **Consultá la guía completa:** [Guía de Extensión y Creación de Plugins](plugins.md)
+
