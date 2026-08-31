@@ -183,3 +183,53 @@ check-tetsuo:
 ````
 
 Ejecutá `make check-tetsuo` antes de cada commit para asegurar que tu código conserve el estado de aprobación.
+
+---
+
+(manual-tetsuo-arquitectura)=
+## 7. Arquitectura Interna y Mecanismo Técnico
+
+La herramienta **`tetsuo`** implementa un motor de alta precisión basado en:
+
+- **Tecnología Núcleo:** `LLVM AddressSanitizer / UndefinedBehaviorSanitizer Parser + Shadow Memory Mapper + Spanish Pedagogical Translator`.
+- **Aislamiento y Determinismo:** Diseñada para operar sin efectos colaterales en entornos de integración continua (CI), terminales de estudiantes y servidores docentes headless.
+- **Manejo de Errores Pedagógico:** Todo fallo de sintaxis, memoria o lógica se traduce en una acción prescriptiva concreta con su respectiva justificación técnica.
+
+---
+
+(manual-tetsuo-ecosistema)=
+## 8. Integración y Conexión con el Ecosistema
+
+````{note}
+Ninguna herramienta opera de forma aislada. **`tetsuo`** forma parte del pipeline integral de evaluación, verificación y enseñanza de la cátedra.
+````
+
+### Diagrama de Flujo e Interoperabilidad
+
+````{mermaid}
+graph TD
+    DAE[Daedalus: Compilador con Sanitizers] --> BIN[Binario + libasan/libubsan]
+    BIN -->|Ejecución con Fuga o UB| ASAN[AddressSanitizer Engine]
+    ASAN -->|Reporte Críptico en Inglés| TET[Tetsuo: Traductor Pedagógico]
+    TET -->|Mapa de Shadow Memory| TERM[Terminal Estudiante (Español)]
+    TET -->|Sección de Sanitizers| DRD[Dredd: Informe alumno_rN.md]
+````
+
+### Matriz de Intercambio de Datos
+
+| Canal | Herramientas Conectadas | Tipo de Datos Transferidos |
+| :--- | :--- | :--- |
+| **Entradas (Inputs)** | - `Salidas de error de ASan/UBSan` | Código fuente, AST, binarios, testcases, contratos |
+| **Salidas (Outputs)** | - `hal (correlación de fallas)`
+- `dredd (informe en alumno_rN.md)` | Informes Markdown, diagnósticos Rich, JSON, actas |
+| **Sincronización** | `daedalus`, `hal`, `nostromo`, `dredd` | Validación cruzada, flags compartidos y autofix |
+
+### Pipeline de Integración Recomendado
+
+Podés encadenar `tetsuo` con otras herramientas del ecosistema en una única línea de comando:
+
+````{code-block} bash
+# Pipeline de integración típico
+daedalus compile src/*.c -fsanitize=address,undefined -o bin/app && tetsuo run -- ./bin/app
+````
+
