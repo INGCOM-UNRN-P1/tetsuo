@@ -18,14 +18,41 @@ app = typer.Typer(
 console = Console()
 
 
-@app.command()
+def generar_seccion_markdown(report: SanitizerReport) -> str:
+    """Genera sección de reporte de Sanitizers (ASan/UBSan) para Dredd."""
+    lines = ["## Diagnóstico de Sanitizers y Memoria Dinámica (Tetsuo)\n"]
+    lines.append(f"- **Archivo analizado:** `{Path(report.target_file).name}`")
+    lines.append(f"- **Diagnósticos de sanitizers:** {len(report.diagnoses)}\n")
+    if report.passed:
+        lines.append("> [!TIP]\n> **Memoria Limpia:** No se detectaron violaciones de AddressSanitizer (buffer overflows, use-after-free) ni UndefinedBehaviorSanitizer.\n")
+    else:
+        lines.append("> [!CAUTION]\n> **Fallo de Seguridad en Memoria / Comportamiento Indefinido:**\n")
+        lines.append("| Sanitizer | Ubicación | Diagnóstico | Causa Raíz / Explicación | Sugerencia |")
+        lines.append("| :--- | :--- | :--- | :--- | :--- |")
+        for diag in report.diagnoses:
+            loc_str = f"`{Path(diag.file_path).name}:{diag.line_number}`" if diag.file_path else "—"
+            lines.append(f"| **{diag.sanitizer_type}** | {loc_str} | {diag.title_es} | {diag.explanation_es} | {diag.suggestion_es} |")
+        lines.append("")
+    return "\n".join(lines)
+
+
+@app.command("run")
+@app.command("check")
 def run(
     target: Path = typer.Argument(..., help="Archivo .c o binario a ejecutar bajo sanitizers", exists=True),
     input_data: str = typer.Option("", "--input", "-i", help="Entrada estándar (stdin) para la ejecución"),
-    json_output: bool = typer.Option(False, "--json", help="Emitir salida en formato JSON estructurado")
+    json_output: bool = typer.Option(False, "--json", help="Emitir salida en formato JSON estructurado"),
+    output_md: Optional[Path] = typer.Option(None, "--md", "--output-md", help="Generar sección de reporte en formato Markdown para fusión en Dredd."),
 ):
     """Compila y ejecuta con AddressSanitizer/UBSan traduciendo cualquier violación a español didáctico."""
     report = run_with_sanitizers(target, input_data=input_data)
+
+    if output_md:
+        md_text = generar_seccion_markdown(report)
+        output_md.parent.mkdir(parents=True, exist_ok=True)
+        output_md.write_text(md_text, encoding="utf-8")
+        console.print(f"[bold green]✓ Sección Markdown generada en:[/bold green] {output_md}")
+        raise typer.Exit(code=0 if report.passed else 1)
 
     if json_output:
         print(json.dumps(report.model_dump(), indent=2, ensure_ascii=False))
@@ -62,6 +89,23 @@ def run(
         console.print(Panel(panel_content, title=f"[bold red]{diag.sanitizer_type}[/bold red]"))
 
     raise typer.Exit(code=1)
+
+
+@app.command("report")
+def report_cmd(
+    target: Path = typer.Argument(..., help="Archivo .c o binario a ejecutar bajo sanitizers", exists=True),
+    output: Optional[Path] = typer.Option(None, "--output", "-o", help="Ruta de destino del archivo Markdown."),
+    input_data: str = typer.Option("", "--input", "-i", help="Entrada estándar para la ejecución"),
+):
+    """Genera directamente la sección de reporte Markdown de TETSUO para Dredd."""
+    report = run_with_sanitizers(target, input_data=input_data)
+    md_content = generar_seccion_markdown(report)
+    if output:
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(md_content, encoding="utf-8")
+        console.print(f"[bold green]✓ Reporte Markdown generado en:[/bold green] {output}")
+    else:
+        print(md_content)
 
 
 @app.command()
