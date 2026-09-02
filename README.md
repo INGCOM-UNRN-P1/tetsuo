@@ -4,6 +4,34 @@
 
 ---
 
+## 🎯 Alcance
+
+### Qué cubre
+- Compilación instrumentada, ejecución controlada y traducción pedagógica de diagnósticos de sanitizers en programas C.
+- Captura y traducción contextual a español rioplatense de advertencias complejas de AddressSanitizer (ASan), UndefinedBehaviorSanitizer (UBSan) y LeakSanitizer (LSan).
+- Captura y traducción de reportes de fallos de memoria emitidos por Valgrind Memcheck.
+- Identificación de lecturas fuera de límites, accesos tras liberación (use-after-free) y fugas de memoria con indicación precisa de línea y archivo.
+
+### Qué no cubre (Límites y Delegación)
+- Confinamiento en sandbox no privilegiado de kernel (delegado a `nostromo`).
+- Depuración forense con GDB de core dumps no instrumentados (delegado a `hal`).
+- Inyección deliberada de fallos de memoria en runtime (delegado a `vasquez`).
+
+---
+
+## 📋 Requisitos
+
+### Requisitos de Sistema y Entorno
+- Linux / WSL o Windows (MSYS2 UCRT64). Python >= 3.10.
+
+### Dependencias Externas y Binarios
+- `gcc` o `clang` con bibliotecas de sanitizers (`libasan`, `libubsan`), y `valgrind` (opcional).
+
+### Integración en el Ecosistema
+- CLI `tetsuo`. Plugin registrado en `ripley.plugins` (`sanitizer_translator`).
+
+---
+
 ## 🚀 Uso Rápido
 
 ```bash
