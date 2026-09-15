@@ -29,6 +29,13 @@ class SanitizerDiagnosis(BaseModel):
 
 class SanitizerReport(BaseModel):
     binary_or_source: str
+    target_file: Optional[str] = None
+    instrumented: bool = True
     passed: bool = True
     diagnoses: List[SanitizerDiagnosis] = Field(default_factory=list)
     raw_output: str = ""
+
+    def __init__(self, **data):
+        if "binary_or_source" in data and not data.get("target_file"):
+            data["target_file"] = data["binary_or_source"]
+        super().__init__(**data)
