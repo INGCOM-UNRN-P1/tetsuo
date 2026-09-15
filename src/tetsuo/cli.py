@@ -108,6 +108,98 @@ def report_cmd(
         print(md_content)
 
 
+@app.command("doctor")
+def doctor_cmd(
+    json_output: bool = typer.Option(False, "--json", help="Emitir diagnóstico en formato JSON estructurado."),
+) -> None:
+    """Verifica el estado del entorno de sanitizers TETSUO (GCC, Clang, soporte libasan/libubsan)."""
+    import shutil
+    import subprocess
+    import sys
+    import tempfile
+    diagnostico = []
+
+    py_ok = sys.version_info >= (3, 10)
+    diagnostico.append({
+        "componente": "Python Runtime",
+        "estado": "OK" if py_ok else "ERROR",
+        "requerido": True,
+        "detalle": f"Python {sys.version.split()[0]}",
+    })
+
+    gcc_path = shutil.which("gcc")
+    diagnostico.append({
+        "componente": "Compilador GCC",
+        "estado": "OK" if gcc_path else "ERROR",
+        "requerido": True,
+        "detalle": gcc_path or "No encontrado (requerido para compilar con AddressSanitizer)",
+    })
+
+    # Verificar que GCC soporte -fsanitize=address
+    asan_ok = False
+    asan_det = ""
+    if gcc_path:
+        with tempfile.NamedTemporaryFile(suffix=".c", mode="w", delete=False) as f:
+            f.write("int main(void) { return 0; }\n")
+            c_name = f.name
+        try:
+            res = subprocess.run([gcc_path, "-fsanitize=address,undefined", c_name, "-o", "/dev/null"], capture_output=True, text=True)
+            if res.returncode == 0:
+                asan_ok = True
+                asan_det = "Soporte ASan y UBSan operativo en GCC"
+            else:
+                asan_det = f"Falla al enlazar libasan: {res.stderr.strip()}"
+        except Exception as e:
+            asan_det = str(e)
+        finally:
+            Path(c_name).unlink(missing_ok=True)
+    else:
+        asan_det = "Sin compilador GCC"
+
+    diagnostico.append({
+        "componente": "AddressSanitizer (libasan)",
+        "estado": "OK" if asan_ok else "ERROR",
+        "requerido": True,
+        "detalle": asan_det,
+    })
+
+    clang_path = shutil.which("clang")
+    diagnostico.append({
+        "componente": "Compilador Clang",
+        "estado": "OK" if clang_path else "ADVERTENCIA",
+        "requerido": False,
+        "detalle": clang_path or "No encontrado (opcional, motor alternativo)",
+    })
+
+    todo_ok = py_ok and bool(gcc_path) and asan_ok
+
+    if json_output:
+        import json
+        payload = {
+            "schema_version": "1.0.0",
+            "herramienta": "tetsuo",
+            "ok": todo_ok,
+            "componentes": diagnostico,
+        }
+        print(json.dumps(payload, indent=2, ensure_ascii=False))
+        raise typer.Exit(code=0 if todo_ok else 1)
+
+    tabla = Table(title="🏥 Diagnóstico del Entorno TETSUO (doctor)", border_style="cyan")
+    tabla.add_column("Componente", style="bold white")
+    tabla.add_column("Estado", justify="center")
+    tabla.add_column("Detalle")
+
+    for c in diagnostico:
+        color = "bold green" if c["estado"] == "OK" else ("bold yellow" if c["estado"] == "ADVERTENCIA" else "bold red")
+        simbolo = "✓" if c["estado"] == "OK" else ("⚠️" if c["estado"] == "ADVERTENCIA" else "✗")
+        tabla.add_row(c["componente"], f"[{color}]{simbolo} {c['estado']}[/{color}]", c["detalle"])
+
+    console.print(tabla)
+    if not todo_ok:
+        console.print("\n[bold red]Instalá gcc y libasan (`sudo apt install gcc libasan6` o equivalente).[/bold red]")
+        raise typer.Exit(code=1)
+
+
 @app.command()
 def version():
     """Muestra la versión de TETSUO."""

@@ -1,5 +1,6 @@
 """Tests unitarios y de integración para TETSUO."""
 
+import json
 from pathlib import Path
 from typer.testing import CliRunner
 from tetsuo.cli import app
@@ -9,6 +10,16 @@ from tetsuo.core.translator import run_with_sanitizers
 from tetsuo.plugins.ripley_plugin import TetsuoPlugin
 
 runner = CliRunner()
+
+
+def test_cli_doctor():
+    res = runner.invoke(app, ["doctor"])
+    assert "doctor" in res.output.lower()
+
+    res_json = runner.invoke(app, ["doctor", "--json"])
+    data = json.loads(res_json.output)
+    assert data["herramienta"] == "tetsuo"
+    assert "ok" in data
 
 
 def test_parse_asan_heap_overflow():
