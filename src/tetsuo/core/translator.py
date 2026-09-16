@@ -8,6 +8,25 @@ from tetsuo.core.models import SanitizerReport
 from tetsuo.core.sanitizer_parser import parse_sanitizer_output
 
 
+def _compilar_con_daedalus(source_c: Path, bin_path: Path) -> Optional[tuple[bool, str]]:
+    try:
+        from daedalus.core.compiler import compilar_archivos
+        res = compilar_archivos([source_c], binario_salida=bin_path, flags_adicionales=["-fsanitize=address", "-O0", "-g"])
+        return res.exito, res.stderr_crudo
+    except ImportError:
+        import sys
+        sibling = Path(__file__).resolve().parents[4] / "daedalus" / "src"
+        if sibling.is_dir() and str(sibling) not in sys.path:
+            sys.path.insert(0, str(sibling))
+            try:
+                from daedalus.core.compiler import compilar_archivos
+                res = compilar_archivos([source_c], binario_salida=bin_path, flags_adicionales=["-fsanitize=address", "-O0", "-g"])
+                return res.exito, res.stderr_crudo
+            except ImportError:
+                return None
+        return None
+
+
 def run_with_sanitizers(source_or_binary: Path, input_data: str = "") -> SanitizerReport:
     """Compila (si es .c) con sanitizers y ejecuta capturando diagnósticos."""
     with tempfile.TemporaryDirectory() as tmp_dir:
@@ -15,22 +34,34 @@ def run_with_sanitizers(source_or_binary: Path, input_data: str = "") -> Sanitiz
 
         if source_or_binary.suffix == ".c":
             bin_path = tmp_path / "app_sanitized"
-            # Intentar compilar con sanitizers
-            comp = subprocess.run(
-                ["gcc", "-O0", "-g", "-fsanitize=address", str(source_or_binary), "-o", str(bin_path)],
-                capture_output=True,
-                text=True,
-                check=False
-            )
-            if comp.returncode != 0:
-                return SanitizerReport(
-                    binary_or_source=str(source_or_binary),
-                    target_file=str(source_or_binary),
-                    instrumented=False,
-                    passed=False,
-                    diagnoses=[],
-                    raw_output=f"Error de compilación bajo sanitizers (-fsanitize=address):\n{comp.stderr}"
+            daed_res = _compilar_con_daedalus(source_or_binary, bin_path)
+            if daed_res is not None:
+                ok, stderr = daed_res
+                if not ok:
+                    return SanitizerReport(
+                        binary_or_source=str(source_or_binary),
+                        target_file=str(source_or_binary),
+                        instrumented=False,
+                        passed=False,
+                        diagnoses=[],
+                        raw_output=f"Error de compilación bajo sanitizers (-fsanitize=address):\n{stderr}"
+                    )
+            else:
+                comp = subprocess.run(
+                    ["gcc", "-O0", "-g", "-fsanitize=address", str(source_or_binary), "-o", str(bin_path)],
+                    capture_output=True,
+                    text=True,
+                    check=False
                 )
+                if comp.returncode != 0:
+                    return SanitizerReport(
+                        binary_or_source=str(source_or_binary),
+                        target_file=str(source_or_binary),
+                        instrumented=False,
+                        passed=False,
+                        diagnoses=[],
+                        raw_output=f"Error de compilación bajo sanitizers (-fsanitize=address):\n{comp.stderr}"
+                    )
             target_bin = bin_path
         else:
             target_bin = source_or_binary
