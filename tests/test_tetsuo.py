@@ -50,6 +50,9 @@ def test_run_with_sanitizers_clean(tmp_path, monkeypatch):
         return subprocess.CompletedProcess(cmd, 0, stdout="clean run", stderr="")
 
     monkeypatch.setattr(subprocess, "run", mock_run)
+    # La ejecución pasa por nostromo (Popen) si está disponible: se fuerza el camino
+    # de subprocess.run, que es el que simula este test.
+    monkeypatch.setattr("tetsuo.core.translator._try_import_nostromo", lambda: None)
     report = run_with_sanitizers(c)
     assert report.passed is True
     assert report.instrumented is True
@@ -91,6 +94,9 @@ def test_cli_run_clean(tmp_path, monkeypatch):
         return subprocess.CompletedProcess(cmd, 0, stdout="clean run", stderr="")
 
     monkeypatch.setattr(subprocess, "run", mock_run)
+    # La ejecución pasa por nostromo (Popen) si está disponible: se fuerza el camino
+    # de subprocess.run, que es el que simula este test.
+    monkeypatch.setattr("tetsuo.core.translator._try_import_nostromo", lambda: None)
     res = runner.invoke(app, ["run", str(c), "--json"])
     assert res.exit_code == 0
     assert '"passed": true' in res.output
@@ -114,6 +120,9 @@ def test_ripley_plugin(tmp_path, monkeypatch):
         return subprocess.CompletedProcess(cmd, 0, stdout="clean run", stderr="")
 
     monkeypatch.setattr(subprocess, "run", mock_run)
+    # La ejecución pasa por nostromo (Popen) si está disponible: se fuerza el camino
+    # de subprocess.run, que es el que simula este test.
+    monkeypatch.setattr("tetsuo.core.translator._try_import_nostromo", lambda: None)
     plugin = TetsuoPlugin()
     res = plugin.run({"source_dir": str(tmp_path)})
     assert res["passed"] is True
