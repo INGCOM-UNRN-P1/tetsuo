@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 class SanitizerType(str, Enum):
     ASAN = "AddressSanitizer"
     UBSAN = "UndefinedBehaviorSanitizer"
+    LSAN = "LeakSanitizer"
     MSAN = "MemorySanitizer"
     TSAN = "ThreadSanitizer"
     UNKNOWN = "Unknown"

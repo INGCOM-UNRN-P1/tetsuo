@@ -12,7 +12,7 @@ from tetsuo.core.translator import run_with_sanitizers
 
 app = typer.Typer(
     name="tetsuo",
-    help="Traductor y explicador pedagógico de sanitizers (ASan, UBSan, MSan) en español",
+    help="Traductor y explicador pedagógico de sanitizers (ASan, UBSan, LSan) en español",
     add_completion=True
 )
 console = Console()

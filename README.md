@@ -9,7 +9,7 @@
 ### Qué cubre
 - Compilación instrumentada, ejecución controlada y traducción pedagógica de diagnósticos de sanitizers en programas C.
 - Captura y traducción contextual a español rioplatense de advertencias complejas de AddressSanitizer (ASan), UndefinedBehaviorSanitizer (UBSan) y LeakSanitizer (LSan).
-- Captura y traducción de reportes de fallos de memoria emitidos por Valgrind Memcheck.
+- No traduce Valgrind Memcheck, MemorySanitizer ni ThreadSanitizer: solo ASan, UBSan y LSan.
 - Identificación de lecturas fuera de límites, accesos tras liberación (use-after-free) y fugas de memoria con indicación precisa de línea y archivo.
 
 ### Qué no cubre (Límites y Delegación)

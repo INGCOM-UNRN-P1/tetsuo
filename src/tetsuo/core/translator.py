@@ -11,7 +11,7 @@ from tetsuo.core.sanitizer_parser import parse_sanitizer_output
 def _compilar_con_daedalus(source_c: Path, bin_path: Path) -> Optional[tuple[bool, str]]:
     try:
         from daedalus.core.compiler import compilar_archivos
-        res = compilar_archivos([source_c], binario_salida=bin_path, flags_adicionales=["-fsanitize=address", "-O0", "-g"])
+        res = compilar_archivos([source_c], binario_salida=bin_path, flags_adicionales=["-fsanitize=address,undefined", "-O0", "-g"])
         return res.exito, res.stderr_crudo
     except ImportError:
         import sys
@@ -20,7 +20,7 @@ def _compilar_con_daedalus(source_c: Path, bin_path: Path) -> Optional[tuple[boo
             sys.path.insert(0, str(sibling))
             try:
                 from daedalus.core.compiler import compilar_archivos
-                res = compilar_archivos([source_c], binario_salida=bin_path, flags_adicionales=["-fsanitize=address", "-O0", "-g"])
+                res = compilar_archivos([source_c], binario_salida=bin_path, flags_adicionales=["-fsanitize=address,undefined", "-O0", "-g"])
                 return res.exito, res.stderr_crudo
             except ImportError:
                 return None
@@ -58,11 +58,11 @@ def run_with_sanitizers(source_or_binary: Path, input_data: str = "") -> Sanitiz
                         instrumented=False,
                         passed=False,
                         diagnoses=[],
-                        raw_output=f"Error de compilación bajo sanitizers (-fsanitize=address):\n{stderr}"
+                        raw_output=f"Error de compilación bajo sanitizers (-fsanitize=address,undefined):\n{stderr}"
                     )
             else:
                 comp = subprocess.run(
-                    ["gcc", "-O0", "-g", "-fsanitize=address", str(source_or_binary), "-o", str(bin_path)],
+                    ["gcc", "-O0", "-g", "-fsanitize=address,undefined", str(source_or_binary), "-o", str(bin_path)],
                     capture_output=True,
                     text=True,
                     check=False
@@ -74,7 +74,7 @@ def run_with_sanitizers(source_or_binary: Path, input_data: str = "") -> Sanitiz
                         instrumented=False,
                         passed=False,
                         diagnoses=[],
-                        raw_output=f"Error de compilación bajo sanitizers (-fsanitize=address):\n{comp.stderr}"
+                        raw_output=f"Error de compilación bajo sanitizers (-fsanitize=address,undefined):\n{comp.stderr}"
                     )
             target_bin = bin_path
         else:

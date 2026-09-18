@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "tetsuo"
 version = "0.1.0"
-description = "Traductor y explicador pedagógico en español de sanitizers (ASan, UBSan, MSan)"
+description = "Traductor y explicador pedagógico en español de sanitizers (ASan, UBSan, LSan)"
 readme = "README.md"
 license = {text = "GPL-3.0-or-later"}
 authors = [
