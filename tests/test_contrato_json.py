@@ -44,3 +44,13 @@ def test_version_como_opcion_global():
     for flag in ("--version", "-v"):
         res = runner.invoke(app, [flag])
         assert res.exit_code == 0 and __version__ in res.output
+
+
+def test_tetsuo_no_invoca_hal_ni_el_readme_lo_promete():
+    """TETSUO-D0902: la flecha TETSUO -> HAL no tiene respaldo en código."""
+    from pathlib import Path
+    raiz = Path(__file__).resolve().parents[1]
+    for py in (raiz / "src").rglob("*.py"):
+        texto = py.read_text(encoding="utf-8")
+        assert "import hal" not in texto and "from hal" not in texto and '"hal"' not in texto, py
+    assert "delegado a `hal`" not in (raiz / "README.md").read_text(encoding="utf-8")

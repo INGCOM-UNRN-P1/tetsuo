@@ -14,7 +14,7 @@
 
 ### Qué no cubre (Límites y Delegación)
 - Confinamiento en sandbox no privilegiado de kernel (delegado a `nostromo`).
-- Depuración forense con GDB de core dumps no instrumentados (delegado a `hal`).
+- Depuración forense con GDB de core dumps no instrumentados: la cubre `hal`, herramienta complementaria; tetsuo no la invoca ni depende de ella.
 - Inyección deliberada de fallos de memoria en runtime (delegado a `vasquez`).
 
 ---
