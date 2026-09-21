@@ -18,6 +18,23 @@ app = typer.Typer(
 console = Console()
 
 
+def _version_callback(value: bool) -> None:
+    if value:
+        from tetsuo import __version__
+        typer.echo(f"tetsuo {__version__}")
+        raise typer.Exit()
+
+
+@app.callback()
+def main_callback(
+    version: Optional[bool] = typer.Option(
+        None, "--version", "-v", help="Muestra la versión de tetsuo y sale.",
+        callback=_version_callback, is_eager=True,
+    ),
+) -> None:
+    """Traductor y explicador pedagógico de sanitizers en español."""
+
+
 def generar_seccion_markdown(report: SanitizerReport) -> str:
     """Genera sección de reporte de Sanitizers (ASan/UBSan) para Dredd."""
     lines = ["## Diagnóstico de Sanitizers y Memoria Dinámica (Tetsuo)\n"]

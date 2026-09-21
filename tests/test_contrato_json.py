@@ -36,3 +36,11 @@ def test_cli_json_incluye_schema_version_y_observaciones(tmp_path):
     data = json.loads(res.output)
     assert data["schema_version"] == "1.0.0"
     assert "observaciones" in data and "instrumented" in data
+
+
+def test_version_como_opcion_global():
+    """TETSUO-D0402."""
+    from tetsuo import __version__
+    for flag in ("--version", "-v"):
+        res = runner.invoke(app, [flag])
+        assert res.exit_code == 0 and __version__ in res.output
