@@ -20,6 +20,10 @@ class TetsuoPlugin:
         report = run_with_sanitizers(main_c)
 
         return {
+            "schema_version": report.schema_version,
+            "ok": report.passed,
+            "instrumented": report.instrumented,
+            "observaciones": report.observaciones(),
             "passed": report.passed,
             "diagnoses_count": len(report.diagnoses),
             "diagnoses": [

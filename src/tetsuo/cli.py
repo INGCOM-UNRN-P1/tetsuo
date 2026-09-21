@@ -55,7 +55,7 @@ def run(
         raise typer.Exit(code=0 if report.passed else 1)
 
     if json_output:
-        print(json.dumps(report.model_dump(), indent=2, ensure_ascii=False))
+        print(json.dumps(report.to_contract(), indent=2, ensure_ascii=False))
         if not report.passed:
             raise typer.Exit(code=1)
         return
