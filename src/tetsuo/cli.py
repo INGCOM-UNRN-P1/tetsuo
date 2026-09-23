@@ -37,7 +37,11 @@ def main_callback(
 
 def generar_seccion_markdown(report: SanitizerReport) -> str:
     """Genera sección de reporte de Sanitizers (ASan/UBSan) para Dredd."""
-    lines = ["## Diagnóstico de Sanitizers y Memoria Dinámica (Tetsuo)\n"]
+    status = "ok" if report.passed else "fail"
+    lines = [
+        f"<!-- dredd-section: tetsuo, tool=tetsuo, version=1.0.0, status={status} -->\n",
+        "## Diagnóstico de Sanitizers y Memoria Dinámica (Tetsuo)\n",
+    ]
     lines.append(f"- **Archivo analizado:** `{Path(report.target_file).name}`")
     lines.append(f"- **Diagnósticos de sanitizers:** {len(report.diagnoses)}\n")
     if report.passed:
@@ -48,7 +52,10 @@ def generar_seccion_markdown(report: SanitizerReport) -> str:
         lines.append("| :--- | :--- | :--- | :--- | :--- |")
         for diag in report.diagnoses:
             loc_str = f"`{Path(diag.file_path).name}:{diag.line_number}`" if diag.file_path else "—"
-            lines.append(f"| **{diag.sanitizer_type}** | {loc_str} | {diag.title_es} | {diag.explanation_es} | {diag.suggestion_es} |")
+            t_limpio = str(diag.title_es).replace("|", "&#124;")
+            exp_limpio = str(diag.explanation_es).replace("|", "&#124;")
+            sug_limpio = str(diag.suggestion_es).replace("|", "&#124;")
+            lines.append(f"| **{diag.sanitizer_type}** | {loc_str} | {t_limpio} | {exp_limpio} | {sug_limpio} |")
         lines.append("")
     return "\n".join(lines)
 
