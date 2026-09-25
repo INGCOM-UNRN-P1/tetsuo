@@ -1,6 +1,7 @@
 """Tests unitarios y de integración para TETSUO."""
 
 import json
+import subprocess
 from pathlib import Path
 from typer.testing import CliRunner
 from tetsuo.cli import app
@@ -59,11 +60,21 @@ def test_run_with_sanitizers_clean(tmp_path, monkeypatch):
     assert len(report.diagnoses) == 0
 
 
-def test_fail_hard_without_libasan(tmp_path):
+def test_fail_hard_without_libasan(tmp_path, monkeypatch):
     c = tmp_path / "bug.c"
     c.write_text("int main(void) { return 0; }")
-    # En esta máquina sin libasan, gcc falla al compilar con -fsanitize=address
-    # Debe fallar duro: no realizar fallback silencioso sin instrumentar
+    # Forzar fallo de compilación con sanitizers para verificar que tetsuo
+    # falla duro y no realiza fallback silencioso sin instrumentar
+    monkeypatch.setattr(
+        "tetsuo.core.translator._compilar_con_daedalus",
+        lambda *args, **kwargs: (False, "ld: cannot find libasan.so")
+    )
+    def mock_gcc_fail(cmd, *args, **kwargs):
+        if cmd[0] == "gcc":
+            return subprocess.CompletedProcess(cmd, 1, stdout="", stderr="ld: cannot find libasan.so")
+        return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
+    monkeypatch.setattr(subprocess, "run", mock_gcc_fail)
+
     report = run_with_sanitizers(c)
     assert report.passed is False
     assert report.instrumented is False
