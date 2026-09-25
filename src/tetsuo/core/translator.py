@@ -41,6 +41,23 @@ def _try_import_nostromo():
         return None
 
 
+# Símbolos que deja la instrumentación de ASan/UBSan/TSan en el ejecutable.
+_MARCAS_INSTRUMENTACION = (b"__asan_init", b"__ubsan_handle", b"__tsan_init")
+
+
+def binario_instrumentado(binario: Path) -> bool:
+    """True si el ejecutable fue compilado con algún sanitizer.
+
+    Un binario sin instrumentación corre sin que ASan/UBSan observen nada:
+    que termine bien no dice nada sobre desbordes o use-after-free.
+    """
+    try:
+        contenido = binario.read_bytes()
+    except OSError:
+        return False
+    return any(marca in contenido for marca in _MARCAS_INSTRUMENTACION)
+
+
 def run_with_sanitizers(source_or_binary: Path, input_data: str = "") -> SanitizerReport:
     """Compila (si es .c) con sanitizers y ejecuta capturando diagnósticos."""
     with tempfile.TemporaryDirectory() as tmp_dir:
@@ -79,6 +96,23 @@ def run_with_sanitizers(source_or_binary: Path, input_data: str = "") -> Sanitiz
             target_bin = bin_path
         else:
             target_bin = source_or_binary
+            if not binario_instrumentado(target_bin):
+                # N-TETSUO-01: antes se ejecutaba igual y, al terminar sin
+                # errores, se informaba «Ejecución limpia sin errores de
+                # sanitizers» aunque ningún sanitizer estuviera activo.
+                return SanitizerReport(
+                    binary_or_source=str(source_or_binary),
+                    target_file=str(source_or_binary),
+                    instrumented=False,
+                    passed=False,
+                    diagnoses=[],
+                    raw_output=(
+                        f"El binario {source_or_binary.name} no está instrumentado con sanitizers: "
+                        "ASan/UBSan no pueden observar su ejecución, así que no se puede afirmar que "
+                        "esté libre de desbordes o use-after-free. Compilalo con "
+                        "-fsanitize=address,undefined -g o pasale a tetsuo el archivo .c."
+                    ),
+                )
 
         # Ejecutar de forma aislada vía nostromo (con fallback)
         nostromo_fn = _try_import_nostromo()
