@@ -11,6 +11,7 @@ from tetsuo.core.models import SanitizerReport
 from tetsuo.core.translator import run_with_sanitizers
 
 app = typer.Typer(
+    context_settings={"help_option_names": ["-h", "--help"]},
     name="tetsuo",
     help="Traductor y explicador pedagógico de sanitizers (ASan, UBSan, LSan) en español",
     add_completion=True
