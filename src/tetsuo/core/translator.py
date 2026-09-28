@@ -11,34 +11,18 @@ from tetsuo.core.sanitizer_parser import parse_sanitizer_output
 def _compilar_con_daedalus(source_c: Path, bin_path: Path) -> Optional[tuple[bool, str]]:
     try:
         from daedalus.core.compiler import compilar_archivos
-        res = compilar_archivos([source_c], binario_salida=bin_path, flags_adicionales=["-fsanitize=address,undefined", "-O0", "-g"])
-        return res.exito, res.stderr_crudo
     except ImportError:
-        import sys
-        sibling = Path(__file__).resolve().parents[4] / "daedalus" / "src"
-        if sibling.is_dir() and str(sibling) not in sys.path:
-            sys.path.insert(0, str(sibling))
-            try:
-                from daedalus.core.compiler import compilar_archivos
-                res = compilar_archivos([source_c], binario_salida=bin_path, flags_adicionales=["-fsanitize=address,undefined", "-O0", "-g"])
-                return res.exito, res.stderr_crudo
-            except ImportError:
-                return None
+        return None  # sin el extra `ecosistema` se usa el camino propio
+    res = compilar_archivos([source_c], binario_salida=bin_path, flags_adicionales=["-fsanitize=address,undefined", "-O0", "-g"])
+    return res.exito, res.stderr_crudo
+
+
 def _try_import_nostromo():
     try:
         from nostromo.core.sandbox import ejecutar_aislado
-        return ejecutar_aislado
     except ImportError:
-        import sys
-        sibling = Path(__file__).resolve().parents[4] / "nostromo" / "src"
-        if sibling.is_dir() and str(sibling) not in sys.path:
-            sys.path.insert(0, str(sibling))
-            try:
-                from nostromo.core.sandbox import ejecutar_aislado
-                return ejecutar_aislado
-            except ImportError:
-                return None
-        return None
+        return None  # sin el extra `ecosistema` se usa el camino propio
+    return ejecutar_aislado
 
 
 # Símbolos que deja la instrumentación de ASan/UBSan/TSan en el ejecutable.
