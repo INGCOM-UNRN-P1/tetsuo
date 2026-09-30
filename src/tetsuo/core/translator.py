@@ -101,7 +101,7 @@ def run_with_sanitizers(source_or_binary: Path, input_data: str = "") -> Sanitiz
         # Ejecutar de forma aislada vía nostromo (con fallback)
         nostromo_fn = _try_import_nostromo()
         if nostromo_fn:
-            res_aislado = nostromo_fn(target_bin, stdin_texto=input_data, timeout_segundos=5.0, memoria_mb=256, usar_bwrap=True)
+            res_aislado = nostromo_fn(target_bin, stdin_texto=input_data, timeout_segundos=5.0, memoria_mb=0, usar_bwrap=True)
             if res_aislado.error_tipo == "TIMEOUT":
                 return SanitizerReport(
                     binary_or_source=str(source_or_binary),

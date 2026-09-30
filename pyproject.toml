@@ -41,7 +41,7 @@ dependencies = [
 # a commits publicados; sin el extra se usa el camino propio (gcc, sin sandbox de nostromo…).
 ecosistema = [
     "daedalus @ git+https://github.com/INGCOM-UNRN-P1/daedalus@cd3eb998193cd5bd9ea881aa9a0e19f5fe6d9a86",
-    "nostromo @ git+https://github.com/INGCOM-UNRN-P1/nostromo@30e2743ca7bb88673283edbc8eb7419e8a1e9ca0",
+    "nostromo @ git+https://github.com/INGCOM-UNRN-P1/nostromo@82a8797d1ddb878c57e39599a0a9a3bc5229f675",
 ]
 
 [project.urls]
