@@ -56,3 +56,32 @@ tetsuo run main.c --json
 - **`heap-use-after-free`**: Lectura/escritura en punteros ya liberados.
 - **`double-free`**: Múltiples llamadas a `free()` sobre la misma dirección.
 - **`undefined-behavior`**: Overflows con signo, desreferencia de nulos o shifts inválidos.
+
+<!-- p1:referencia:inicio — generado por p1-tools/scripts/readme_generado.py: no editar a mano -->
+
+## Referencia rápida
+
+### Requisitos
+
+- Python ≥ 3.11 y [uv](https://docs.astral.sh/uv/getting-started/installation/).
+- Programas del sistema: `gcc`.
+
+| Sistema | `gcc` |
+|:--|:--|
+| Debian / Ubuntu | `sudo apt install gcc` |
+| Fedora | `sudo dnf install gcc` |
+| Windows | incluido en el entorno de la cátedra (MSYS2 UCRT64) |
+| macOS | `xcode-select --install` (clang como `gcc`) |
+
+### Comandos
+
+| Comando | Descripción |
+|:--|:--|
+| `tetsuo check`, `tetsuo run` | Compila y ejecuta con AddressSanitizer/UBSan traduciendo cualquier violación a español didáctico. |
+| `tetsuo report` | Genera directamente la sección de reporte Markdown de TETSUO para Dredd. |
+| `tetsuo doctor` | Verifica el estado del entorno de sanitizers TETSUO (GCC, Clang, soporte libasan/libubsan). |
+| `tetsuo version` | Muestra la versión de TETSUO. |
+
+Ayuda de cada comando: `tetsuo <comando> -h`.
+
+<!-- p1:referencia:fin -->
