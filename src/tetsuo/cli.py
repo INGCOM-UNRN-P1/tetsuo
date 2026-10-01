@@ -10,6 +10,7 @@ from rich.panel import Panel
 from rich.table import Table
 from tetsuo import __version__
 from tetsuo.core.models import SanitizerReport
+from tetsuo.core.pista import pista_activa, reporte_en_pista
 from tetsuo.core.translator import run_with_sanitizers
 
 # Contrato de línea de comandos del ecosistema (-h/--help, --version/-v, errores de datos como
@@ -56,9 +57,13 @@ def run(
     input_data: str = typer.Option("", "--input", "-i", help="Entrada estándar (stdin) para la ejecución"),
     json_output: bool = typer.Option(False, "--json", help="Emitir salida en formato JSON estructurado"),
     output_md: Optional[Path] = typer.Option(None, "--md", "--output-md", help="Generar sección de reporte en formato Markdown para fusión en Dredd."),
+    pista: bool = typer.Option(False, "--pista", help="Modo pista (o P1_PISTA=1): el tipo de violación y la función, sin la línea ni la corrección."),
 ):
     """Compila y ejecuta con AddressSanitizer/UBSan traduciendo cualquier violación a español didáctico."""
     report = run_with_sanitizers(target, input_data=input_data)
+    en_pista = pista_activa(pista)
+    if en_pista:
+        report = reporte_en_pista(report)
 
     if output_md:
         md_text = generar_seccion_markdown(report)
@@ -83,24 +88,34 @@ def run(
         return
 
     if not report.diagnoses:
+        detalle = report.raw_output or "Revisalo compilando con daedalus (en modo pista, sin la salida cruda)."
         console.print(Panel(
-            f"[bold red]❌ Error de Compilación o Ejecución:[/bold red]\n{report.raw_output}",
+            f"[bold red]❌ Error de Compilación o Ejecución:[/bold red]\n{detalle}",
             title="[bold red]TETSUO Error[/bold red]"
         ))
         raise typer.Exit(code=1)
 
     for diag in report.diagnoses:
-        loc_str = f"{diag.file_path}:{diag.line_number} (en función {diag.function_name})" if diag.file_path else "Ubicación no identificada"
+        if diag.file_path and diag.line_number:
+            loc_str = f"{diag.file_path}:{diag.line_number} (en función {diag.function_name})"
+        elif diag.file_path:
+            loc_str = f"{diag.file_path}, en la función {diag.function_name or '¿?'}()"
+        else:
+            loc_str = "Ubicación no identificada"
         panel_content = (
             f"[bold red]🚨 {diag.title_es}[/bold red]\n\n"
             f"• [bold]Ubicación:[/bold] {loc_str}\n"
             f"• [bold]Tipo de Acceso:[/bold] {diag.access_type or 'N/A'}\n"
             f"• [bold]Dirección de Memoria:[/bold] {diag.memory_address or 'N/A'}\n\n"
-            f"[bold yellow]Explicación Didáctica:[/bold yellow]\n{diag.explanation_es}\n\n"
-            f"[bold green]↳ Acción Correctiva Recomendada:[/bold green]\n{diag.suggestion_es}"
+            f"[bold yellow]Explicación Didáctica:[/bold yellow]\n{diag.explanation_es}"
         )
+        if diag.suggestion_es:
+            panel_content += f"\n\n[bold green]↳ Acción Correctiva Recomendada:[/bold green]\n{diag.suggestion_es}"
         console.print(Panel(panel_content, title=f"[bold red]{diag.sanitizer_type}[/bold red]"))
 
+    if en_pista:
+        console.print("[dim]Modo pista: buscá la violación en la función indicada; la línea y la corrección no se "
+                      "muestran.[/dim]")
     raise typer.Exit(code=1)
 
 

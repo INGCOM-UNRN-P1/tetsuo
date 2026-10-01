@@ -36,6 +36,7 @@ class SanitizerReport(BaseModel):
     passed: bool = True
     diagnoses: List[SanitizerDiagnosis] = Field(default_factory=list)
     raw_output: str = ""
+    pista: bool = False  # modo pista: sin líneas ni sugerencias (ver core/pista.py)
 
     def __init__(self, **data):
         if "binary_or_source" in data and not data.get("target_file"):

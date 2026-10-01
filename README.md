@@ -13,6 +13,7 @@
 - Captura y traducción contextual a español rioplatense de advertencias complejas de AddressSanitizer (ASan), UndefinedBehaviorSanitizer (UBSan) y LeakSanitizer (LSan).
 - No traduce Valgrind Memcheck, MemorySanitizer ni ThreadSanitizer: solo ASan, UBSan y LSan.
 - Identificación de lecturas fuera de límites, accesos tras liberación (use-after-free) y fugas de memoria con indicación precisa de línea y archivo.
+- Modo pista para evaluaciones (`--pista` o `P1_PISTA=1`, que ripley exporta con `[general] pistas = true`): la violación, su explicación y la función donde ocurrió, sin la línea, la salida cruda ni la acción correctiva.
 
 ### Qué no cubre (Límites y Delegación)
 - Confinamiento en sandbox no privilegiado de kernel (delegado a `nostromo`).
