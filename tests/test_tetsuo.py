@@ -152,3 +152,15 @@ def test_generar_seccion_markdown():
     assert "test.c" in md
 
 
+
+
+def test_rutas_de_windows_con_letra_de_unidad():
+    """N-ECO-22: los dos puntos de `C:` cortaban la ruta y la línea quedaba vacía."""
+    from tetsuo.core.sanitizer_parser import FRAME_DE_USUARIO, STACK_FRAME
+
+    frame = STACK_FRAME.search(r"#0 0x7ff6a1b2 in leer C:\Users\ana\tp\heap.c:5")
+    assert frame.group(3) == r"C:\Users\ana\tp\heap.c" and frame.group(4) == "5"
+    frame = FRAME_DE_USUARIO.search(r"#1 0x7ff6a1b2 in main C:/Users/ana/tp/heap.c:11")
+    assert frame.group(2) == "C:/Users/ana/tp/heap.c" and frame.group(3) == "11"
+    # Las rutas de Linux siguen igual.
+    assert STACK_FRAME.search("#0 0x55d in leer /home/ana/heap.c:5").group(3) == "/home/ana/heap.c"

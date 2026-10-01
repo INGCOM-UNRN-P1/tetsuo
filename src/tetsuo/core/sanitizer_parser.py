@@ -10,9 +10,11 @@ UBSAN_HEADER = re.compile(r'runtime error: (.*)')
 # AddressSanitizer: sin este patrón, el error más común del curso (olvidarse el
 # `free`) llegaba sin traducir.
 LSAN_HEADER = re.compile(r'==\d+==ERROR: LeakSanitizer: detected memory leaks')
-FRAME_DE_USUARIO = re.compile(r'#\d+\s+[0-9a-fx]+\s+in\s+([a-zA-Z0-9_]+)\s+([^\s:()]+\.[ch]):(\d+)')
+# `(?:[A-Za-z]:)?`: en Windows la ruta empieza con la letra de unidad (C:\...), cuyos dos puntos no
+# separan el archivo de la línea (N-ECO-22).
+FRAME_DE_USUARIO = re.compile(r'#\d+\s+[0-9a-fx]+\s+in\s+([a-zA-Z0-9_]+)\s+((?:[A-Za-z]:)?[^\s:()]+\.[ch]):(\d+)')
 LSAN_LEAK = re.compile(r'(Direct|Indirect) leak of (\d+) byte\(s\) in (\d+) object\(s\) allocated from:')
-STACK_FRAME = re.compile(r'#0\s+([0-9a-fx]+)\s+in\s+([a-zA-Z0-9_]+)\s+([^:]+):(\d+)')
+STACK_FRAME = re.compile(r'#0\s+([0-9a-fx]+)\s+in\s+([a-zA-Z0-9_]+)\s+((?:[A-Za-z]:)?[^:]+):(\d+)')
 ACCESS_PATTERN = re.compile(r'(READ|WRITE) of size (\d+)')
 
 CATALOGO_ERRORES = {
