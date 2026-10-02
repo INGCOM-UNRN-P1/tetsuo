@@ -67,4 +67,26 @@ class SanitizerReport(BaseModel):
         data = self.model_dump()
         data["ok"] = self.passed
         data["observaciones"] = self.observaciones()
+        data["hallazgos"] = self.hallazgos()
         return data
+
+    def hallazgos(self) -> List[dict]:
+        """Diagnósticos en la taxonomía común del ecosistema (yutani.hallazgos)."""
+        import yutani.hallazgos as taxonomia
+        return [
+            taxonomia.hallazgo("tetsuo", d.error_tag, CATEGORIA_POR_TAG.get(d.error_tag, "memoria"), "error", d.title_es,
+                     archivo=d.file_path, linea=d.line_number, sugerencia=d.suggestion_es or None)
+            for d in self.diagnoses
+        ]
+
+
+CATEGORIA_POR_TAG = {
+    "heap-buffer-overflow": "arreglos", "stack-buffer-overflow": "arreglos", "global-buffer-overflow": "arreglos",
+    "array-index-out-of-bounds": "arreglos",
+    "heap-use-after-free": "memoria", "double-free": "memoria", "bad-free": "memoria",
+    "alloc-dealloc-mismatch": "memoria", "memory-leak": "memoria",
+    "stack-use-after-return": "punteros", "stack-use-after-scope": "punteros", "segv": "punteros",
+    "null-pointer": "punteros", "misaligned": "punteros",
+    "signed-integer-overflow": "numeros", "shift-out-of-bounds": "numeros", "conversion": "numeros",
+    "division-by-zero": "numeros", "undefined-behavior": "numeros",
+}

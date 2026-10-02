@@ -4,7 +4,7 @@ import re
 from typing import List, Optional
 from tetsuo.core.models import SanitizerDiagnosis, SanitizerType, SanitizerReport
 
-ASAN_HEADER = re.compile(r'==\d+==ERROR: AddressSanitizer: ([a-zA-Z\-]+) on address ([0-9a-fx]+)')
+ASAN_HEADER = re.compile(r'==\d+==ERROR: AddressSanitizer: ([a-zA-Z\-]+) on (?:unknown )?address ([0-9a-fx]+)')
 UBSAN_HEADER = re.compile(r'runtime error: (.*)')
 # ASan en Linux activa LeakSanitizer por defecto, y su cabecera NO es la de
 # AddressSanitizer: sin este patrón, el error más común del curso (olvidarse el
@@ -43,12 +43,74 @@ CATALOGO_ERRORES = {
         "Una función retornó un puntero a una variable local de su Stack Frame, el cual fue destruido al retornar.",
         "No retornes punteros a variables locales. Asigná la memoria en el Heap con malloc o pasá el búfer como parámetro."
     ),
+    "stack-use-after-scope": (
+        "Uso de una Variable Local fuera de su Bloque",
+        "Se usó la dirección de una variable declarada dentro de un bloque { ... } (un if, un for) después de "
+        "que el bloque terminó: esa variable ya no existe.",
+        "Declará la variable en el bloque donde la vas a seguir usando, o copiá su valor antes de salir del bloque."
+    ),
+    "segv": (
+        "Acceso a una Dirección Inválida (Segmentation Fault)",
+        "El programa leyó o escribió en una dirección que no le pertenece: casi siempre un puntero NULL, sin "
+        "inicializar o ya liberado.",
+        "Inicializá los punteros al declararlos, verificá NULL después de malloc/fopen y no los uses después de free."
+    ),
+    "bad-free": (
+        "free() sobre una Dirección que no Vino de malloc",
+        "Se llamó a free() con un puntero que no devolvió malloc/calloc/realloc (una variable local, un literal o "
+        "un puntero desplazado con aritmética).",
+        "Pasale a free() exactamente el puntero que devolvió malloc, sin moverlo, y solo una vez."
+    ),
+    "alloc-dealloc-mismatch": (
+        "Reserva y Liberación que no Coinciden",
+        "La memoria se reservó con una función y se liberó con otra que no le corresponde.",
+        "Liberá con free() lo que reservaste con malloc/calloc/realloc."
+    ),
     "double-free": (
         "Doble Liberación de Memoria (Double Free)",
         "Se invocó 'free()' dos veces sobre la misma dirección de memoria dinámica.",
         "Asegurate de que cada llamada a malloc tenga exactamente una llamada a free."
     ),
 }
+
+
+# UBSan: (patrón del mensaje, tag, título, explicación, sugerencia). Antes todos salían como un
+# «comportamiento indefinido» genérico con el mensaje en inglés.
+_UBSAN: List[tuple] = [
+    (r"signed integer overflow", "signed-integer-overflow", "Desborde de un Entero con Signo",
+     "El resultado de una suma, resta o multiplicación no entra en el tipo (por ejemplo, pasa INT_MAX): en C "
+     "eso es comportamiento indefinido, no «da la vuelta».",
+     "Verificá los límites antes de operar (INT_MAX en <limits.h>) o usá un tipo más grande (long long)."),
+    (r"division by zero", "division-by-zero", "División por Cero",
+     "Se dividió (o se calculó el resto) por cero.",
+     "Verificá que el divisor no sea cero antes de dividir."),
+    (r"shift exponent|left shift of", "shift-out-of-bounds", "Desplazamiento de Bits Inválido",
+     "Se desplazó un valor una cantidad de bits negativa, mayor o igual al ancho del tipo, o un negativo a la "
+     "izquierda.",
+     "Desplazá solo entre 0 y el ancho del tipo menos uno, y preferí tipos sin signo para operar con bits."),
+    (r"index -?\d+ out of bounds", "array-index-out-of-bounds", "Índice Fuera de los Límites del Arreglo",
+     "Se accedió a un arreglo con un índice fuera de su rango (de 0 a N-1).",
+     "Revisá las condiciones de los lazos: con N elementos, el último índice válido es N-1."),
+    (r"null pointer", "null-pointer", "Uso de un Puntero NULL",
+     "Se leyó, escribió o accedió a un campo a través de un puntero que vale NULL.",
+     "Verificá que el puntero no sea NULL antes de usarlo (por ejemplo, después de malloc o fopen)."),
+    (r"misaligned address", "misaligned", "Acceso Desalineado",
+     "Se accedió a un dato a través de un puntero que no respeta la alineación de su tipo (un int * dentro "
+     "de un char[]).",
+     "Copiá los bytes con memcpy en lugar de convertir punteros entre tipos distintos."),
+    (r"is outside the range of representable values|implicit conversion", "conversion", "Conversión fuera de Rango",
+     "Un valor no entra en el tipo al que se lo convierte.",
+     "Verificá el rango antes de convertir o usá un tipo que pueda representarlo."),
+]
+
+
+def traducir_ubsan(mensaje: str) -> tuple:
+    for patron, tag, titulo, explicacion, sugerencia in _UBSAN:
+        if re.search(patron, mensaje, re.IGNORECASE):
+            return tag, titulo, explicacion, sugerencia
+    return ("undefined-behavior", "Comportamiento Indefinido (Undefined Behavior)",
+            "Se produjo una operación no permitida por el estándar de C",
+            "Corregí la operación para evitar que el compilador genere código impredecible o erróneo.")
 
 
 def parse_sanitizer_output(raw_text: str) -> List[SanitizerDiagnosis]:
@@ -92,12 +154,17 @@ def parse_sanitizer_output(raw_text: str) -> List[SanitizerDiagnosis]:
     # 2. UndefinedBehaviorSanitizer
     for ubsan_match in UBSAN_HEADER.finditer(raw_text):
         msg = ubsan_match.group(1).strip()
+        tag, titulo, explicacion, sugerencia = traducir_ubsan(msg)
+        inicio = raw_text.rfind("\n", 0, ubsan_match.start()) + 1
+        ubicacion = re.match(r"((?:[A-Za-z]:)?[^\s:]+\.[ch]):(\d+):\d+:", raw_text[inicio:ubsan_match.start()])
         diagnoses.append(SanitizerDiagnosis(
             sanitizer_type=SanitizerType.UBSAN,
-            error_tag="undefined-behavior",
-            title_es="Comportamiento Indefinido (Undefined Behavior)",
-            explanation_es=f"Se produjo una operación no permitida por el estándar de C: {msg}",
-            suggestion_es="Corregí la operación para evitar que el compilador genere código impredecible o erróneo.",
+            error_tag=tag,
+            title_es=titulo,
+            explanation_es=f"{explicacion} (UBSan: {msg})",
+            file_path=ubicacion.group(1) if ubicacion else None,
+            line_number=int(ubicacion.group(2)) if ubicacion else None,
+            suggestion_es=sugerencia,
             raw_snippet=ubsan_match.group(0)
         ))
 

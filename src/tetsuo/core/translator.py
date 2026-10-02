@@ -25,6 +25,28 @@ def _try_import_nostromo():
     return ejecutar_aislado
 
 
+_SIN_SANITIZERS = ("cannot find -lasan", "cannot find -lubsan", "libasan", "libubsan",
+                   "unsupported option '-fsanitize", "-fsanitize=address' is not supported",
+                   "unrecognized command-line option '-fsanitize")
+
+
+def explicar_error_de_compilacion(stderr: str) -> str:
+    """Si el compilador no trae los sanitizers (MinGW en Windows, Linux sin libasan), dice qué hacer en
+    lugar de mostrar solo el error del enlazador."""
+    if any(marca in stderr for marca in _SIN_SANITIZERS):
+        return (
+            "Error de compilación bajo sanitizers: este compilador no trae AddressSanitizer/UBSan (pasa con MinGW/MSYS2 en Windows y en Linux sin "
+            "libasan), así que tetsuo no puede instrumentar el programa. Alternativas:\n"
+            "• en Linux, instalá libasan (Debian/Ubuntu: `sudo apt install libasan8 libubsan1`; "
+            "Fedora: `sudo dnf install libasan libubsan`);\n"
+            "• en Windows, usá WSL con el entorno de la cátedra en modo Linux;\n"
+            "• mientras tanto, `hal check programa.c` diagnostica los crashes y `hal valgrind` traduce un "
+            "informe de Valgrind.\n\n"
+            f"Salida del compilador:\n{stderr}"
+        )
+    return f"Error de compilación bajo sanitizers (-fsanitize=address,undefined):\n{stderr}"
+
+
 # Símbolos que deja la instrumentación de ASan/UBSan/TSan en el ejecutable.
 _MARCAS_INSTRUMENTACION = (b"__asan_init", b"__ubsan_handle", b"__tsan_init")
 
@@ -59,7 +81,7 @@ def run_with_sanitizers(source_or_binary: Path, input_data: str = "") -> Sanitiz
                         instrumented=False,
                         passed=False,
                         diagnoses=[],
-                        raw_output=f"Error de compilación bajo sanitizers (-fsanitize=address,undefined):\n{stderr}"
+                        raw_output=explicar_error_de_compilacion(stderr)
                     )
             else:
                 comp = subprocess.run(
@@ -75,7 +97,7 @@ def run_with_sanitizers(source_or_binary: Path, input_data: str = "") -> Sanitiz
                         instrumented=False,
                         passed=False,
                         diagnoses=[],
-                        raw_output=f"Error de compilación bajo sanitizers (-fsanitize=address,undefined):\n{comp.stderr}"
+                        raw_output=explicar_error_de_compilacion(comp.stderr)
                     )
             target_bin = bin_path
         else:
