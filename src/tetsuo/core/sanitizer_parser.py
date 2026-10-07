@@ -169,7 +169,8 @@ def parse_sanitizer_output(raw_text: str) -> List[SanitizerDiagnosis]:
         ))
 
     # 3. LeakSanitizer
-    if LSAN_HEADER.search(raw_text):
+    cabecera_lsan = LSAN_HEADER.search(raw_text)
+    if cabecera_lsan:
         directas = [(int(b), int(o)) for tipo, b, o in LSAN_LEAK.findall(raw_text) if tipo == "Direct"]
         total_bytes = sum(b for b, _ in directas)
         total_objetos = sum(o for _, o in directas)
@@ -197,7 +198,7 @@ def parse_sanitizer_output(raw_text: str) -> List[SanitizerDiagnosis]:
                 "usarlo, incluso en las rutas de error, y recorré las estructuras enlazadas "
                 "liberando nodo por nodo."
             ),
-            raw_snippet=LSAN_HEADER.search(raw_text).group(0),
+            raw_snippet=cabecera_lsan.group(0),
         ))
 
     return diagnoses

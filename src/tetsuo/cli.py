@@ -32,7 +32,7 @@ def generar_seccion_markdown(report: SanitizerReport) -> str:
         f"<!-- dredd-section: tetsuo, tool=tetsuo, version=1.0.0, status={status} -->\n",
         "## Diagnóstico de Sanitizers y Memoria Dinámica (Tetsuo)\n",
     ]
-    lines.append(f"- **Archivo analizado:** `{Path(report.target_file).name}`")
+    lines.append(f"- **Archivo analizado:** `{Path(report.target_file).name if report.target_file else '—'}`")
     lines.append(f"- **Diagnósticos de sanitizers:** {len(report.diagnoses)}\n")
     if report.passed:
         lines.append("> [!TIP]\n> **Memoria Limpia:** No se detectaron violaciones de AddressSanitizer (buffer overflows, use-after-free) ni UndefinedBehaviorSanitizer.\n")
@@ -220,7 +220,7 @@ def doctor_cmd(
     for c in diagnostico:
         color = "bold green" if c["estado"] == "OK" else ("bold yellow" if c["estado"] == "ADVERTENCIA" else "bold red")
         simbolo = "✓" if c["estado"] == "OK" else ("⚠️" if c["estado"] == "ADVERTENCIA" else "✗")
-        tabla.add_row(c["componente"], f"[{color}]{simbolo} {c['estado']}[/{color}]", c["detalle"])
+        tabla.add_row(str(c["componente"]), f"[{color}]{simbolo} {c['estado']}[/{color}]", str(c["detalle"]))
 
     console.print(tabla)
     if not todo_ok:
