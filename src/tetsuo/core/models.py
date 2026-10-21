@@ -71,13 +71,39 @@ class SanitizerReport(BaseModel):
         return data
 
     def hallazgos(self) -> List[dict]:
-        """Diagnósticos en la taxonomía común del ecosistema (yutani.hallazgos)."""
+        """Diagnósticos en la taxonomía común del ecosistema (yutani.hallazgos), con el archivo
+        relativo al directorio de trabajo y la explicación en español (lo que jonesy muestra con F1)."""
         import yutani.hallazgos as taxonomia
-        return [
-            taxonomia.hallazgo("tetsuo", d.error_tag, CATEGORIA_POR_TAG.get(d.error_tag, "memoria"), "error", d.title_es,
-                     archivo=d.file_path, linea=d.line_number, sugerencia=d.suggestion_es or None)
-            for d in self.diagnoses
-        ]
+        lista = []
+        for d in self.diagnoses:
+            h = taxonomia.hallazgo("tetsuo", d.error_tag, CATEGORIA_POR_TAG.get(d.error_tag, "memoria"), "error",
+                                   d.title_es, archivo=ruta_relativa(d.file_path), linea=d.line_number or None,
+                                   sugerencia=d.suggestion_es or None)
+            if d.explanation_es:
+                h["explicacion"] = d.explanation_es
+            lista.append(h)
+        return lista
+
+
+def ruta_relativa(ruta: Optional[str]) -> Optional[str]:
+    """El archivo como lo esperan jonesy y los demás clientes (yutani.hallazgos.ruta_archivo):
+    relativo al directorio de trabajo, con / y sin ./; afuera de él, absoluto. ASan informa la ruta
+    con la que se compiló (absoluta, casi siempre)."""
+    import os
+    from pathlib import Path
+
+    if not ruta:
+        return None
+    p = Path(ruta.replace("\\", "/") if not ruta.startswith("/") else ruta)
+    if p.is_absolute():
+        try:
+            relativa = os.path.relpath(p, Path.cwd())
+        except ValueError:  # otra unidad en Windows
+            return p.as_posix()
+        if relativa == os.pardir or relativa.startswith(os.pardir + os.sep):
+            return p.as_posix()
+        p = Path(relativa)
+    return Path(os.path.normpath(p)).as_posix()
 
 
 CATEGORIA_POR_TAG = {

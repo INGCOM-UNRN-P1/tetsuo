@@ -56,6 +56,7 @@ tetsuo doctor
 | :--- | :--- |
 | [`tetsuo check`](#check) | Compila y ejecuta con AddressSanitizer/UBSan traduciendo cualquier violación a español didáctico. |
 | [`tetsuo run`](#run) | Compila y ejecuta con AddressSanitizer/UBSan traduciendo cualquier violación a español didáctico. |
+| [`tetsuo translate`](#translate) | Traduce el informe de un programa que ya corrió con sanitizers (sin compilarlo ni correrlo). |
 | [`tetsuo report`](#report) | Genera directamente la sección de reporte Markdown de TETSUO para Dredd. |
 | [`tetsuo doctor`](#doctor) | Verifica el estado del entorno de sanitizers TETSUO (GCC, Clang, soporte libasan/libubsan). |
 | [`tetsuo version`](#version) | Muestra la versión de TETSUO. |
@@ -102,6 +103,29 @@ Compila y ejecuta con AddressSanitizer/UBSan traduciendo cualquier violación a 
 #### Ejemplo de Invocación
 ```bash
 tetsuo run <target>
+```
+
+### `tetsuo translate`
+
+Traduce el informe de un programa que ya corrió con sanitizers (sin compilarlo ni correrlo): lo
+que usa jonesy, que corre el programa instrumentado en su terminal para que el alumno le escriba
+la entrada. Con `--json`, el mismo contrato que `tetsuo run --json`, con el archivo de cada
+hallazgo relativo al directorio de trabajo y su explicación.
+
+#### Argumentos
+| Argumento | Tipo | Descripción |
+| :--- | :--- | :--- |
+| `informe` | `Optional[Path]` | Archivo con la salida del programa (el informe de ASan/UBSan/LSan); sin él, se lee de stdin. |
+
+#### Opciones y Banderas
+| Opción / Banderas | Tipo | Por Defecto | Descripción |
+| :--- | :--- | :--- | :--- |
+| `--json` | `bool` | `False` | Emitir salida en formato JSON estructurado |
+| `--pista` | `bool` | `False` | Modo pista (o `P1_PISTA=1`): el tipo de violación y la función, sin la línea ni la corrección. |
+
+#### Ejemplo de Invocación
+```bash
+./programa 2>&1 | tetsuo translate --json
 ```
 
 ### `tetsuo report`

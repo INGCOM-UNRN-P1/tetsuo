@@ -79,6 +79,7 @@ tetsuo run main.c --json
 | Comando | Descripción |
 |:--|:--|
 | `tetsuo check`, `tetsuo run` | Compila y ejecuta con AddressSanitizer/UBSan traduciendo cualquier violación a español didáctico. |
+| `tetsuo translate` | Traduce el informe de un programa que ya corrió con sanitizers (sin compilarlo ni correrlo). |
 | `tetsuo report` | Genera directamente la sección de reporte Markdown de TETSUO para Dredd. |
 | `tetsuo doctor` | Verifica el estado del entorno de sanitizers TETSUO (GCC, Clang, soporte libasan/libubsan). |
 | `tetsuo version` | Muestra la versión de TETSUO. |
@@ -87,7 +88,7 @@ Ayuda de cada comando: `tetsuo <comando> -h`.
 
 ### Salida JSON
 
-Con `--json`, estos comandos emiten el resultado como JSON por la salida estándar, para usarlo desde scripts, ripley o dredd: `tetsuo check`, `tetsuo run`, `tetsuo doctor`. El de `doctor --json` lleva `schema_version` y `ok`.
+Con `--json`, estos comandos emiten el resultado como JSON por la salida estándar, para usarlo desde scripts, ripley o dredd: `tetsuo check`, `tetsuo run`, `tetsuo translate`, `tetsuo doctor`. El de `doctor --json` lleva `schema_version` y `ok`.
 
 ### Códigos de salida
 

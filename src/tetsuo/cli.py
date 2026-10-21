@@ -119,6 +119,48 @@ def run(
     raise typer.Exit(code=1)
 
 
+@app.command("translate")
+def translate_cmd(
+    informe: Optional[Path] = typer.Argument(
+        None, exists=True, dir_okay=False,
+        help="Archivo con la salida del programa (el informe de ASan/UBSan/LSan); sin él, se lee de stdin.",
+    ),
+    json_output: bool = typer.Option(False, "--json", help="Emitir salida en formato JSON estructurado"),
+    pista: bool = typer.Option(False, "--pista", help="Modo pista (o P1_PISTA=1): el tipo de violación y la función, sin la línea ni la corrección."),
+):
+    """Traduce el informe de un programa que ya corrió con sanitizers (sin compilarlo ni correrlo)."""
+    import sys
+
+    if informe is None:
+        if sys.stdin.isatty():
+            console.print("[bold red]Error:[/bold red] pasá el archivo con la salida del programa o enviásela por la "
+                          "entrada estándar: ./programa 2>&1 | tetsuo translate")
+            raise typer.Exit(code=2)
+        texto = sys.stdin.read()
+    else:
+        texto = informe.read_text(encoding="utf-8", errors="replace")
+    from tetsuo.core.sanitizer_parser import parse_sanitizer_output
+
+    diagnosticos = parse_sanitizer_output(texto)
+    report = SanitizerReport(binary_or_source=str(informe) if informe else "-", passed=not diagnosticos,
+                             diagnoses=diagnosticos, raw_output=texto)
+    if pista_activa(pista):
+        report = reporte_en_pista(report)
+    if json_output:
+        print(json.dumps(report.to_contract(), indent=2, ensure_ascii=False))
+        raise typer.Exit(code=0 if report.passed else 1)
+    if report.passed:
+        console.print("[green]No hay informes de sanitizers en la salida.[/green]")
+        return
+    for diag in report.diagnoses:
+        donde = f"{diag.file_path}:{diag.line_number}" if diag.file_path and diag.line_number else (
+            diag.file_path or "ubicación no identificada")
+        console.print(f"[bold red]• {diag.title_es}[/bold red] ({donde}): {diag.explanation_es}")
+        if diag.suggestion_es:
+            console.print(f"  [green]↳ {diag.suggestion_es}[/green]")
+    raise typer.Exit(code=1)
+
+
 @app.command("report")
 def report_cmd(
     target: Path = typer.Argument(..., help="Archivo .c o binario a ejecutar bajo sanitizers", exists=True),
